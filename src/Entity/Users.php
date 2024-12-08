@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -14,6 +15,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 
 #[ORM\Entity(repositoryClass: UsersRepository::class)]
+// on indique que le nom et l'email des utilisateurs ne peuvent pas etre les meêmes pour éviter les problèmes d'identifications des utilisateurs sur le tableau des scores par exemple
+#[UniqueEntity('email',  message: 'Cette adresse email est déjà utilisée.')]
+#[UniqueEntity('name', message: "Ce nom d'utilisateur est déjà pris.")]
 class Users implements UserInterface,PasswordAuthenticatedUserInterface
 {
 
@@ -30,19 +34,23 @@ class Users implements UserInterface,PasswordAuthenticatedUserInterface
     #[Groups(["getUsers", "getScore","getScoreById","getPictures","getPicturesByidUsers"])]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(name: 'name', length: 255, unique:true)]
     #[Groups(["getUsers", "getScore","getScoreById","getPictures","getPicturesByidUsers"])]
     #[Assert\Length(min: 1, max: 255, minMessage: "Le nom de l'utilisateur dois faire au moins {{ limit }} caractères.", maxMessage: "Le nom de l'utilisateur ne peut pas faire plus de {{ limit }} caractères.")]
     #[Assert\NotBlank(message: "Le nom de l'utilisateur est obligatoire.")]
     #[Assert\Type(type: "string", message: "Le nom l'utilisateur doit être de type string.")]
     private ?string $name = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(name: 'email',length: 255,type:'string',  unique:true)]
     #[Groups(["getUsers"])]
     #[Assert\Length(min: 1, max: 255, minMessage: "Le mail de l'utilisateur dois faire au moins {{ limit }} caractères.", maxMessage: "Le mail de l'utilisateur ne peut pas faire plus de {{ limit }} caractères.")]
     #[Assert\NotBlank(message: "Le mail de l'utilisateur est obligatoire.")]
     #[Assert\Email(message: "Le mail de l'utilisateur n'est pas valide.")]
     private ?string $email = null;
+
+    // #[Groups(["getUsers"])]
+    // private ?string $url = null;
+
 
     #[ORM\Column(type: Types::TEXT)]
     #[Assert\Regex(pattern: "/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/",message: "Le mot de passe doit contenir au moins 8 caractères, dont une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial.")]
@@ -73,6 +81,15 @@ class Users implements UserInterface,PasswordAuthenticatedUserInterface
         $this->pictures = new ArrayCollection();
     }
     
+    // public function getUrl(): ?string
+    // {
+    //     return $this->url;
+    // }
+    // public function setUrl()
+    // {
+    //     $this->url = "http://127.0.0.1:8000/api/users/" . $this->getId();
+    //     return $this;
+    // }
 
     public function getId(): ?int
     {

@@ -13,14 +13,15 @@ class FireflyImageGenerator
         $this->httpClient = $httpClient;
     }
 
-    // public function generateImage(): string
-    public function generateImage(string $prompt)
+    public function generateImage(string $prompt, string $apiKey )
+    // public function generateImage(string $prompt, string $apiKey )
     {
+
         try {
             // 1. Appeler l'API openai avec le prompt
             $response = $this->httpClient->request('POST', 'https://api.openai.com/v1/images/generations', [
                 'headers' => [
-                    'Authorization' => 'Bearer ',
+                    'Authorization' => 'Bearer ' . $apiKey,
                     'Content-Type' => 'application/json',
                 ],
                 'json' => [

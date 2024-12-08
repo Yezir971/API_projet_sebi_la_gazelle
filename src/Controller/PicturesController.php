@@ -9,6 +9,7 @@ use App\Service\FireflyImageGenerator;
 use App\Service\SavePictures as ServiceSavePictures;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -42,14 +43,16 @@ class PicturesController extends AbstractController
         return new JsonResponse($jsonPictureList, Response::HTTP_OK,[], true);
     }
 
+    // route qui va permettre de générer une image pour un utilisateur a l'aide d'un prompt pré défini
     #[Route('/api/pictures/user', name: 'app_add_pictures_with_ia', methods:['GET'])]
+    // public function addNewPictures(Request $request, ServiceSavePictures $savePicture, ObjectManager $manager, #[Autowire(value:'%API_KEY%')] string $apikey): JsonResponse
     public function addNewPictures(Request $request, ServiceSavePictures $savePicture, ObjectManager $manager): JsonResponse
     {
     $data = json_decode($request->getContent(), true);
     $prompt = $data['prompt'];
-
-    // Générer l'image
-    $filename = $this->imageGenerator->generateImage($prompt);
+    $apikey = $this->getParameter(nam: 'API_KEY');
+    // Générer l'image on utilise la méthode generateImage en lui passant en apramètre le prompt et la clé api du .env
+    $filename = $this->imageGenerator->generateImage($prompt, $apikey);
     
     $url = $filename["data"][0]["url"];
     // $savePicture->saveFile($url);
@@ -60,11 +63,11 @@ class PicturesController extends AbstractController
     $newPicture->setSrc($savePicture->getPathName());
     // on récupère les informations de l'utilisateurs qui est actuellement connecter 
     $newPicture->setUser($this->getUser());
-    dump($this->getUser());
     // On envoie dans la base de données les nouvelles informations de l'image enregistrer
     $manager->persist($newPicture);
     $manager->flush();
 
-    return new JsonResponse(['status' => 'success', 'filename' => $data], JsonResponse::HTTP_CREATED);
+    // return new JsonResponse(['status' => 'success', 'filename' => $data], JsonResponse::HTTP_CREATED);
+    return new JsonResponse(['status' => 'success', 'filename' => $filename], JsonResponse::HTTP_CREATED);
     }
 }
