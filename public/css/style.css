@@ -4,5 +4,25 @@
     box-sizing: border-box;
 }
 body{
-    background: red;
+    /* background-image: ; */
+    display: flex;
+    flex-direction: column;
+    margin: 20px;
+    gap: 14px;
+    background: rgba(15, 227, 15, 0.098);
+
 }
+
+img{
+    width: 20%;
+    margin: auto;
+}
+/* .primaryTable{
+    border-collapse: separate;
+    color: #1B334F;
+    background-repeat: repeat-y;
+    background-position: center;
+    background-color: #FAF7F1;
+    width: 100%;
+    line-height: 150%;
+} */
