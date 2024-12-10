@@ -28,6 +28,9 @@ class Users implements UserInterface,PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private array $roles = [];
 
+    #[ORM\Column]
+    private bool $activate = false;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -75,21 +78,26 @@ class Users implements UserInterface,PasswordAuthenticatedUserInterface
     #[Groups(["getUsers"])]
     private ?Pictures $avatar = null;
 
+
+
     public function __construct()
     {
         $this->scores = new ArrayCollection();
         $this->pictures = new ArrayCollection();
     }
     
-    // public function getUrl(): ?string
-    // {
-    //     return $this->url;
-    // }
-    // public function setUrl()
-    // {
-    //     $this->url = "http://127.0.0.1:8000/api/users/" . $this->getId();
-    //     return $this;
-    // }
+    public function getActivate(): ?bool
+    {
+        return $this->activate;
+    }
+
+    public function setActivate(bool $activate): self
+    {
+        $this->activate = $activate;
+
+        return $this;
+    }
+
 
     public function getId(): ?int
     {

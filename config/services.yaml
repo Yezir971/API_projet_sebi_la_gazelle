@@ -6,6 +6,7 @@
 
 parameters:
     API_KEY: '%env(API_KEY)%'
+    APP_SECRET: '%env(APP_SECRET)%'
 
 services:
     App\Service\FireflyImageGenerator:

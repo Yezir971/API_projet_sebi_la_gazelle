@@ -50,7 +50,7 @@ class PicturesController extends AbstractController
     {
     $data = json_decode($request->getContent(), true);
     $prompt = $data['prompt'];
-    $apikey = $this->getParameter(nam: 'API_KEY');
+    $apikey = $this->getParameter(name: 'API_KEY');
     // Générer l'image on utilise la méthode generateImage en lui passant en apramètre le prompt et la clé api du .env
     $filename = $this->imageGenerator->generateImage($prompt, $apikey);
     
