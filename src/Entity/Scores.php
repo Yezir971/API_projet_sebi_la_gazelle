@@ -13,25 +13,25 @@ class Scores
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["getScore","getScoreById"])]
+    #[Groups(["getScore","getScoreById", "getBestScore"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["getScore","getScoreById"])]
+    #[Groups(["getScore","getScoreById", "getBestScore"])]
     #[Assert\Length(min: 1, max: 255, minMessage: "Le titre du jeux dois faire au moins {{ limit }} caractères.", maxMessage: "Le titre du jeux ne peut pas faire plus de {{ limit }} caractères.")]
     #[Assert\NotBlank(message: "Le titre du jeux est obligatoire.")]
     #[Assert\Type(type: "string", message: "Le nom du jeux doit être de type string.")]
     private ?string $name_game = null;
 
     #[ORM\Column]
-    #[Groups(["getScore","getScoreById"])]
+    #[Groups(["getScore","getScoreById", "getBestScore"])]
     #[Assert\NotBlank(message: "Le score du jeux est obligatoire.")]
     #[Assert\Type(type: "integer", message: "Le score doit être de type integer.")]
     private ?int $score = null;
 
     #[ORM\ManyToOne(inversedBy: 'scores')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(["getScore"])]
+    #[Groups(["getScore", "getBestScore"])]
     private ?Users $user = null;
 
     public function getId(): ?int

@@ -17,36 +17,32 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class ScoresController extends AbstractController
 {
+    // route qui va permettre de voir tout les scores des utilisateurs 
     #[Route('/api/scores', name: 'app_scores', methods:['GET'])]
     public function getAllSores(ScoresRepository $scoresRepository, SerializerInterface $serializer): JsonResponse
     {
-        // return $this->json([
-        //     'message' => 'Welcome to your new controller!',
-        //     'path' => 'src/Controller/ScoresController.php',
-        // ]);
         $scoreList = $scoresRepository->findAll();
         $jsonPictureList = $serializer->serialize($scoreList, "json", ["groups" => "getScore"]);
         return new JsonResponse($jsonPictureList, Response::HTTP_OK,[], true);
     }
+    // route qui va permettre de voir le socre d'un utilisateur grâce a son id 
     #[Route('/api/scores/user/{id}', name: 'app_scores_by_id', methods:['GET'])]
     public function getScoresByIdUser(UsersRepository $scoresRepository, SerializerInterface $serializer, int $id): JsonResponse
     {
-        $scoreList = $scoresRepository->find($id);
-        $jsonPictureList = $serializer->serialize($scoreList, "json", ["groups" => "getScoreById"]);
-        return new JsonResponse($jsonPictureList, Response::HTTP_OK,[], true);
-    }
-    #[Route('/api/score/user', name: 'app_add_scores_user', methods:['POST'])]
-    public function setScoreUser(UsersRepository $scoresRepository, SerializerInterface $serializer, int $id): JsonResponse
-    {
-        $scoreList = $scoresRepository->find($id);
-        $jsonPictureList = $serializer->serialize($scoreList, "json", ["groups" => "getScoreById"]);
-        return new JsonResponse($jsonPictureList, Response::HTTP_OK,[], true);
+        if($this->getUser()->id == $id){
+            $scoreList = $scoresRepository->find($id);
+            $jsonPictureList = $serializer->serialize($scoreList, "json", ["groups" => "getScoreById"]);
+            return new JsonResponse($jsonPictureList, Response::HTTP_OK,[], true);
+        }
+        return new JsonResponse(['status' => 403, 'message' => "l'id n'est pas celui de l'utilisateur."], 403);
     }
 
-    // permet d'ajouter un score a l'utilisateur qui est actuelement connecter 
+
+    // permet d'ajouter un score a l'utilisateur qui est actuelement connecter grâce à son token
     #[Route('/api/setscore', name: 'app_user_set_score', methods:['POST'])]
-    public function signUp(Request $request,ObjectManager $manager, ValidatorInterface $validator,SerializerInterface $serializer): JsonResponse
+    public function setScore(Request $request,ObjectManager $manager, ValidatorInterface $validator,SerializerInterface $serializer): JsonResponse
     {
+
         // On récupére les données JSON du corps de la requête
         $data = json_decode($request->getContent(), true);
         // On récupère l'utilisateur qui est actuelement connnecter 
@@ -56,7 +52,7 @@ class ScoresController extends AbstractController
         if (!$data) {
             return new JsonResponse(['error' => 'Invalid JSON'], JsonResponse::HTTP_BAD_REQUEST);
         }
-        // On retourne une JSON respons avec un message d'erreur si il y a un des champs qui manque. 
+        // On retourne une JSON response avec un message d'erreur si il y a un des champs qui manque. 
         if(!isset($data["score"]) || !isset($data["namegame"]) ) {
             return new JsonResponse(['error' => 'Body request not compete'], JsonResponse::HTTP_BAD_REQUEST);
         }
@@ -87,5 +83,39 @@ class ScoresController extends AbstractController
             'data' => $data,
         ], JsonResponse::HTTP_OK);
     
+    }
+    // Route qui va permettre d'avoir le meilleur score en fonction du nom entrer dans le body de la requete 
+    #[Route("api/bestscore", name:"get_best_score", methods: ['POST'])]
+    public function getBestScore(Request $request, ScoresRepository $score, SerializerInterface $serializer): JsonResponse
+    {
+        // on récupère le contenu de la requete du body 
+        $data = json_decode($request->getContent(), true);
+        
+        // Vérifier que le JSON contient le champ "nameGame"
+        if (!isset($data['nameGame']) || empty($data['nameGame'])) {
+            return new JsonResponse(
+                ["message" => "Requête invalide. Le champ 'nameGame' est requis."],
+                JsonResponse::HTTP_BAD_REQUEST
+            );
+        }
+        $nameGame = $data["nameGame"];
+        // on vérifie si la nomenclature du body est respecter 
+        $score = $score->findAllScoreByDesc($nameGame);
+        $scoreSerialize = $serializer->serialize($score, "json", ["groups" => "getBestScore"]);
+        // on essaye de return les scores trié par ordre décroissant, si on y arrive pas c'est que le nom du jex n'existe pas
+        try {
+            // Si les $score est vide c'est soit car le jeux n'existe pas encore soit parceque il y a une faute dans le nom du jeu
+            if (empty($score)) {
+                return new JsonResponse(
+                    ["message" => "Aucun score trouvé pour le jeu '$nameGame'."],
+                    JsonResponse::HTTP_NOT_FOUND
+                );
+            }
+            // on retourne scores sous forme de json 
+            return new JsonResponse($scoreSerialize, JsonResponse::HTTP_OK, [], true);
+        } catch (\Throwable $th) {
+            // erreur serveur
+            return new JsonResponse(["message"=>$th->getMessage()], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

@@ -22,7 +22,7 @@
                     <tbody>
                         <tr style="color:#1B334F; background:rgba(15, 227, 15, 0.098);border-radius: 10px; ">
                             <td style="margin:auto;">
-                                <h1 style="text-align:center;">Activation de votre compte</h1>
+                                <h1 style="text-align:center; color:#1B334F; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;">Activation de votre compte</h1>
                             </td>                            
                         </tr>
                         <tr>
@@ -30,15 +30,27 @@
                                 <table>
                                     <tbody>
                                         <tr>
-                                            <td style="color:#1B334F;">
+                                            <td style="color:#1B334F; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;">
                                                 <p>Bonjour {{ user.username }},</p>
                                                 {# <p>Bonjour toto,</p> #}
                                                 {# <p>Vous avez fait un demande d'incription sur le site de jeux en ligne Sebi la gazelle avec l'email suivant : toto@test.fr</p> #}
                                                 <p>Vous avez fait un demande d'incription sur le site de jeux en ligne Sebi la gazelle avec l'email suivant : {{ user.email }}</p>
                                                 <p>Votre inscription est à valider en cliquant sur le lien ci-dessous : </p>
-                                                <p style="text-align:center;">
+                                                <p style="text-align:center; margin:40px 0;">
                                                     <a href="{{ absolute_url(path('app_user_signup', {token: token})) }}" style=" padding:10px 20px; background-color:#1B334F; color:#FFFFFF; text-decoration:none; border-radius:5px;">Le lien d'activation</a>
                                                 </p>
+                                                {# <table>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table> #}
+
+                                                {# <p style="text-align:center;">
+                                                    <a href="{{ absolute_url(path('app_user_signup', {token: token})) }}" style=" padding:10px 20px; background-color:#1B334F; color:#FFFFFF; text-decoration:none; border-radius:5px;">Le lien d'activation</a>
+                                                </p> #}
                                                 {# <a href="{{ absolute_url(path('app_user_signup', {token: token})) }}">Le lien d'activation</a> #}
                                                 {# <a href="">Le lien d'activation</a> #}
 
@@ -54,6 +66,11 @@
                         </tr>
                         <tr>
                             <td>
+                                <hr>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="color:#1B334F; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;">
                                 <p style="text-align:center;">Ce message a été envoyé automatiquement par les studios de développement de Sebi la gazelle.</p>
                                 <p style="text-align:center;">Sebi la gazelle, Paris, 01 40 09 70 67.</p>
                                 <p style="text-align:center;">2 Rue Saint-Blaise, 75020 Paris, France</p>

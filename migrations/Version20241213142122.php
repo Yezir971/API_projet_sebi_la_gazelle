@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20241210003651 extends AbstractMigration
+final class Version20241213142122 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -20,16 +20,12 @@ final class Version20241210003651 extends AbstractMigration
     public function up(Schema $schema): void
     {
         // this up() migration is auto-generated, please modify it to your needs
-        $this->addSql('ALTER TABLE users ADD activate TINYINT(1) NOT NULL');
-        $this->addSql('CREATE UNIQUE INDEX UNIQ_1483A5E95E237E06 ON users (name)');
-        $this->addSql('CREATE UNIQUE INDEX UNIQ_1483A5E9E7927C74 ON users (email)');
+        $this->addSql('ALTER TABLE users ADD lastlogout DATETIME DEFAULT NULL, DROP activate');
     }
 
     public function down(Schema $schema): void
     {
         // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql('DROP INDEX UNIQ_1483A5E95E237E06 ON users');
-        $this->addSql('DROP INDEX UNIQ_1483A5E9E7927C74 ON users');
-        $this->addSql('ALTER TABLE users DROP activate');
+        $this->addSql('ALTER TABLE users ADD activate TINYINT(1) NOT NULL, DROP lastlogout');
     }
 }

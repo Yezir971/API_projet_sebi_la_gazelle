@@ -13,7 +13,7 @@ class Pictures
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["getPictures","getUsers" ])]
+    #[Groups(["getPictures","getUsers", "getPicturesByidUsers" ])]
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT)]

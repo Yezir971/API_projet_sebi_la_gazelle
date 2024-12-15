@@ -17,18 +17,26 @@ class ScoresRepository extends ServiceEntityRepository
     }
 
     //    /**
-    //     * @return Scores[] Returns an array of Scores objects
+    //     * @return Scores[] Returns an array of Scores ordoned by desc whith the name game
     //     */
-    //    public function findByExampleField($value): array
+       public function findAllScoreByDesc(string $nameGame): array
+       {
+            return $this->createQueryBuilder('s')
+                ->where('s.name_game = :nameGame')
+                ->setParameter('nameGame', $nameGame)
+                ->orderBy('s.score', 'DESC')
+                ->getQuery()
+                ->getResult();
+       }
+    //    /**
+    //     * @return Scores[] Returns an array of Scores ordoned by desc
+    //     */
+    //    public function findAllScoreByDesc(): array
     //    {
-    //        return $this->createQueryBuilder('s')
-    //            ->andWhere('s.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('s.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
+    //         return $this->createQueryBuilder('s')
+    //             ->orderBy('s.score', 'DESC')
+    //             ->getQuery()
+    //             ->getResult();
     //    }
 
     //    public function findOneBySomeField($value): ?Scores

@@ -3,20 +3,38 @@
     padding: 0;
     box-sizing: border-box;
 }
-body{
-    /* background-image: ; */
-    display: flex;
-    flex-direction: column;
-    margin: 20px;
-    gap: 14px;
-    background: rgba(15, 227, 15, 0.098);
 
-}
 
 img{
-    width: 20%;
-    margin: auto;
+    width: 80px;
 }
+body{
+    height: 90vh;
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    background-color:#FAF7F1;
+    background-repeat:repeat-y;
+    background-position:center;
+    background-image: ('../img_mail/background-mail-sebi-la-gazelle.png');
+    gap: 20px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+
+.headerPicture{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+.contentResponseMail{
+    text-align: center;
+    color: #1B334F;
+    font-size:15px;
+    line-height:150%;
+}
+
 /* .primaryTable{
     border-collapse: separate;
     color: #1B334F;

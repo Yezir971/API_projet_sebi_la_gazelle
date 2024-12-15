@@ -2,11 +2,13 @@
 
 namespace App\Controller;
 
+use App\Entity\Pictures;
 use App\Entity\Users;
 use App\Repository\UsersRepository;
 use App\Service\JWTService;
 // use App\Service\JWTService;
 use App\Service\SendMailService;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -25,17 +27,17 @@ class UsersController extends AbstractController
     {
         $this->userPasswordHasher = $userPasswordHasher;
     }
+    // route qui permet d'aoir tout les utilisateurs 
     #[Route('/api/users', name: 'app_all_users', methods:['GET'])]
     public function getAllUsers(UsersRepository $usersRepository, SerializerInterface $serializer): JsonResponse
     {
-        // return $this->json([
-        //     'message' => 'Welcome to your new controller!',
-        //     'path' => 'src/Controller/UsersController.php',
-        // ]);
         $userList = $usersRepository->findAll();
         $jsonUserList = $serializer->serialize($userList, "json", ["groups" => "getUsers"]);
         return new JsonResponse($jsonUserList, Response::HTTP_OK,[], true);
     }
+
+
+    // route pour avoir un utilisateur juste avec son id 
     #[Route('/api/user/{id}', name: 'app_user_by_id', methods:['GET'])]
     public function getUserById(UsersRepository $usersRepository, SerializerInterface $serializer, int $id): JsonResponse
     {
@@ -50,11 +52,13 @@ class UsersController extends AbstractController
 
     // route pour permettre aux utilisateurs de valider leurs inscription grace au token envoyer par mail 
     #[Route('/api/signup/{token}', name: 'app_user_signup')]
-    public function signUp($token, JWTService $jwt, UsersRepository $usersRepository, ObjectManager $manager)
+    public function signUp($token, JWTService $jwt, UsersRepository $usersRepository, ObjectManager $manager): Response
     {
+        $messagesError = [];
 
         // on vérifie si le token est valide et n'a pas expiré et n'a pas été modifier 
-        if($jwt->isValid($token) && !$jwt->isExpired($token) && $jwt->check($token, $this->getParameter(name: 'APP_SECRET')) ){
+        if($jwt->isValid($token) && !$jwt->isExpired($token) && $jwt->check($token, $this->getParameter(name: 'APP_SECRET')) )
+        {
             $payload = $jwt->getPayload($token);
             // on va chercher si notre utilisateur existe deja dans la bdd si il existe $user sera défini
             $user = $usersRepository->findOneBy(["name" => $payload['username']]);
@@ -77,34 +81,47 @@ class UsersController extends AbstractController
                 $manager->persist($user);
                 $manager->flush();
                 // --------------------------------- Traitement des informations et envoie vers la BDD ---------------------------------------
-
-                // on retourne un message de succès 
+                array_push($messagesError,"Votre compte à bien été activé !" );
                 return $this->render('base.html.twig',[
-                    "message"=>"Votre compte à bien été activé !",
+                    "messages"=>$messagesError,
                     "redirect"=>"vous pouvez vous connecter avec le lien suivant !",
                     "linkRedirect" => "bonJeu"
-                ]);
-                // return new JsonResponse([
-                //     'message' => "Votre compte à bien été activé",
-                // ], JsonResponse::HTTP_OK);
+                ], new Response('', Response::HTTP_OK));
             }
         }
+        // on génère un message d'erreur si le token n'est plus valide 
+        if( $jwt->isValid($token) ){
+            array_push($messagesError,"Votre token n'est plus valide." );
+
+            // $messagesError = "Votre token n'est plus valide.";
+
+        }
+        // on génère un message d'erreur si le token a expirer
+        if( $jwt->isExpired($token) ){
+            array_push($messagesError,"Votre token a expiré." );
+            // $messagesError = "Votre token a expiré.";
+        }
+        // on génère un message d'erreur si la signature du token a été modifier 
+        if( $jwt->check($token, $this->getParameter(name: 'APP_SECRET')) ){
+            array_push($messagesError,"La signature de votre token a été modifié." );
+
+            // $messagesError= "La signature de votre token a été modifié.";
+        }
+
 
         // ici il y a un pb avec le token 
 
         return $this->render('base.html.twig', [
-            "message"=>"errur avec le token !",
-            "redirect"=>"Nous vous invitons à vous recréer un compte, ou à contacter le service technique.",
+            "messages"=>$messagesError,
+            "redirect"=>"Nous vous invitons à vous re-créer un compte, ou à contacter le service technique au 06 xx xx xx xx xx.",
             "linkRedirect"=>"retour-vers-inscription"
-        ]);
-        // return new JsonResponse([
-        //     'message' => "Votre compte est déja activé !",
-        // ], JsonResponse::HTTP_BAD_REQUEST, []);
+        ], new Response('', Response::HTTP_BAD_REQUEST));
+
     }
 
-    // route qui va valider si les champs sont correcte et va envoyer un email de confirmation si les inputs sont correcte 
+    // Route qui va valider si les champs sont corrects et va envoyer un email de confirmation si les inputs sont corrects 
     #[Route('api/validateAccount', name:'validate', methods:['GET'])]
-    public function validateAccount( Request $request, JWTService $jwt, ValidatorInterface $validator,SerializerInterface $serializer,SendMailService $mail ):Response
+    public function validateAccount( Request $request, JWTService $jwt, ValidatorInterface $validator,SerializerInterface $serializer,SendMailService $mail ):JsonResponse
     {
         // On récupére les données JSON du corps de la requête
         $data = json_decode($request->getContent(), true);
@@ -158,6 +175,7 @@ class UsersController extends AbstractController
             'ahmedalyjames@gmail.com',
             // 'sebmlrd06@gmail.com',
             'james_ahmedaly@yahoo.com',
+            // $data["email"],
             'Activation de votre compte sur le site sebi la gazelle',
             'register',
             [
@@ -179,6 +197,27 @@ class UsersController extends AbstractController
     //     return $this->render('base.html.twig');
     // }
 
+    // route qui va permettre d'invalider le token d'un utilisateur, notre token est stateless, il n'a pas d'état.
+    // c'est pourquoi un champ lastLogout va nous permettre d'invalider notre token, en comparant la date de création du token d'un user avec la date sa dernière déco  
+    // #[Route('api/logout', name:'delete_session', methods:['DELETE'])]
+    // // public function logout(Users $user, ObjectManager $entityManager)
+    // public function logout(UsersRepository $user, ObjectManager $manager):Response
+    // // le but garder une trace de la déco de l'utilisateur en bdd pour détruire le 
+    // {
+    //     // récupère les informations de l'utilisateur connecter
+    //     $idUser = $this->getUser();
 
+    //     $userTarget = $user->find($idUser);
+    //     // set la date de déco
+    //     $userTarget->lastlogout = new \DateTime();
+    //     // dd($userTarget);
+    //     $manager->persist($userTarget);
+    //     $manager->flush();
+
+    //     return new JsonResponse([
+    //         'message' => 'Vous avez bien été déco',
+    //     ], JsonResponse::HTTP_OK);
+
+    // }
 
 }

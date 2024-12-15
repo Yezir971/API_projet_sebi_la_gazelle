@@ -3,10 +3,12 @@
 namespace App\Controller;
 
 use App\Entity\Pictures;
+use App\Entity\Users;
 use App\Repository\PicturesRepository;
 use App\Repository\UsersRepository;
 use App\Service\FireflyImageGenerator;
 use App\Service\SavePictures as ServiceSavePictures;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -24,13 +26,10 @@ class PicturesController extends AbstractController
     {
         $this->imageGenerator = $imageGenerator;
     }
+    // Route qui permet d'avoir toutes les images 
     #[Route('/api/pictures', name: 'app_pictures', methods:['GET'])]
     public function getPictures(PicturesRepository $picturesRepository, SerializerInterface $serializer): JsonResponse
     {
-        // return $this->json([
-        //     'message' => 'Welcome to your new controller!',
-        //     'path' => 'src/Controller/PicturesController.php',
-        // ]);
         $pictureList = $picturesRepository->findAll();
         $jsonPictureList = $serializer->serialize($pictureList, "json", ["groups" => "getPictures"]);
         return new JsonResponse($jsonPictureList, Response::HTTP_OK,[], true);
@@ -38,12 +37,16 @@ class PicturesController extends AbstractController
     #[Route('/api/pictures/user/{id}', name: 'app_pictures_by_id', methods:['GET'])]
     public function getPicturesById(UsersRepository $picturesRepository, SerializerInterface $serializer, int $id): JsonResponse
     {
-        $pictureList = $picturesRepository->find($id);
-        $jsonPictureList = $serializer->serialize($pictureList, "json", ["groups" => "getPicturesByidUsers"]);
-        return new JsonResponse($jsonPictureList, Response::HTTP_OK,[], true);
+        // on véreifie si l'utilisateur connecter passe bien son id dans la route 
+        if($this->getUser()->id == $id){
+            $pictureList = $picturesRepository->find($id);
+            $jsonPictureList = $serializer->serialize($pictureList, "json", ["groups" => "getPicturesByidUsers"]);
+            return new JsonResponse($jsonPictureList, Response::HTTP_OK,[], true);
+        }
+        return new JsonResponse(['status' => 403, 'message' => "l'id n'est pas celui de l'utilisateur."], 403);
     }
 
-    // route qui va permettre de générer une image pour un utilisateur a l'aide d'un prompt pré défini
+    // route qui va permettre de générer une image pour un utilisateur a l'aide d'un prompt déjà défini
     #[Route('/api/pictures/user', name: 'app_add_pictures_with_ia', methods:['GET'])]
     // public function addNewPictures(Request $request, ServiceSavePictures $savePicture, ObjectManager $manager, #[Autowire(value:'%API_KEY%')] string $apikey): JsonResponse
     public function addNewPictures(Request $request, ServiceSavePictures $savePicture, ObjectManager $manager): JsonResponse
@@ -70,4 +73,48 @@ class PicturesController extends AbstractController
     // return new JsonResponse(['status' => 'success', 'filename' => $data], JsonResponse::HTTP_CREATED);
     return new JsonResponse(['status' => 'success', 'filename' => $filename], JsonResponse::HTTP_CREATED);
     }
+
+
+    // Route qui permet d'assigner un avatar à un utilisateur uniquement grâce à l'id d'une de ses pictures 
+    #[Route('api/picture/setavatar/{avatarId}', name:'set_avatar', methods:['POST'])]
+    public function setAvatar(EntityManagerInterface $entityManager, int $avatarId): JsonResponse
+    {
+
+        // récupère les informations de l'utilisateur connecter
+        $idUser = $this->getUser();
+        // $userTarget = $user->find($idUser);
+        
+
+        $user = $entityManager->getRepository(Users::class)->find($idUser);
+
+        // Récupérer l'avatar par ID
+        $avatar = $entityManager->getRepository(Pictures::class)->find($avatarId);
+        if (!$avatar) {
+            return new JsonResponse(['error' => 'Avatar non trouvé '], 404);
+        }
+
+        // Vérifier si l'avatar appartient à l'utilisateur
+        if ($avatar->getUser() !== $user) {
+            return new JsonResponse(["error" => "Cet avatar n'appartient pas à l'utilisateur cible !"], 403);
+        }
+
+        // Assigner l'avatar à l'utilisateur
+        $user->setAvatar($avatar);
+
+        // Sauvegarder les modifications
+        $entityManager->persist($user);
+        $entityManager->flush();
+
+        return new JsonResponse([
+            'message' => 'Vous avez bien modifier votre avatar !',
+        ], JsonResponse::HTTP_OK);
+
+    }
+
+
+
+
+
+   
+
 }

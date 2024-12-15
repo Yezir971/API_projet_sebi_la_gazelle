@@ -1,3 +1,19 @@
-<h1>{{ message }}</h1>
-<p>{{ redirect }}</p>
-<p>{{ linkRedirect }}</p>
+
+
+
+
+
+<div class="headerPicture">
+    <img src="{{ absolute_url(asset('img_mail/logo.png')) }}"  alt="logo du site sebi la gazelle">
+    <h1>Activation de compte</h1>
+</div>
+
+
+<main class="contentResponseMail">
+    {% for message in messages %}
+        <p>{{ message }}</p>
+    {% endfor %}
+
+    <p>{{ redirect }}</p>
+    <a target="_blank" href="https://www.google.com/webhp?hl=fr&ictx=2&sa=X&ved=0ahUKEwi_qvr_8J-KAxVmV6QEHYOGPMkQPQgI">Retour sur le site</a>
+</main>

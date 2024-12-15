@@ -28,17 +28,23 @@ class Users implements UserInterface,PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private array $roles = [];
 
+
     #[ORM\Column]
     private bool $activate = false;
+
+
+
+    // #[ORM\Column(type:'datetime', nullable:true)]
+    // public ?\DateTimeInterface $lastlogout = null;
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["getUsers", "getScore","getScoreById","getPictures","getPicturesByidUsers"])]
-    private ?int $id = null;
+    #[Groups(["getUsers", "getScore","getScoreById","getPictures","getPicturesByidUsers", "getBestScore"])]
+    public ?int $id = null;
 
     #[ORM\Column(name: 'name', length: 255, unique:true)]
-    #[Groups(["getUsers", "getScore","getScoreById","getPictures","getPicturesByidUsers"])]
+    #[Groups(["getUsers", "getScore","getScoreById","getPictures","getPicturesByidUsers", "getBestScore"])]
     #[Assert\Length(min: 1, max: 255, minMessage: "Le nom de l'utilisateur dois faire au moins {{ limit }} caractères.", maxMessage: "Le nom de l'utilisateur ne peut pas faire plus de {{ limit }} caractères.")]
     #[Assert\NotBlank(message: "Le nom de l'utilisateur est obligatoire.")]
     #[Assert\Type(type: "string", message: "Le nom l'utilisateur doit être de type string.")]
@@ -139,6 +145,20 @@ class Users implements UserInterface,PasswordAuthenticatedUserInterface
 
         return $this;
     }
+
+    // public function getLastLogout(): ?\DateTimeInterface
+    // {
+    //     return $this->lastlogout;
+
+    // }
+    // public function setLastlogout(?\DateTimeInterface $lastlogout): self
+    // {
+    //     $this->lastlogout = $lastlogout;
+    //     return $this;
+
+    // }
+
+
 
     /**
      * @return Collection<int, Scores>
