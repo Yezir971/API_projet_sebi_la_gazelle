@@ -19,14 +19,15 @@ class FireflyImageGenerator
 
         try {
             // 1. Appeler l'API openai avec le prompt
-            // $response = $this->httpClient->request('POST', 'https://api.openai.com/v1/images/generations', [
-            $response = $this->httpClient->request('POST', 'https://api.openai.com/v1/images/edits', [
+            $response = $this->httpClient->request('POST', 'https://api.openai.com/v1/images/generations', [
+            // $response = $this->httpClient->request('POST', 'https://api.openai.com/v1/images/edits', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $apiKey,
-                    // 'Content-Type' => 'application/json',
+                    'Content-Type' => 'application/json',
                 ],
-                'body' => [
-                    'image' => fopen('../public/img_model/james.png', "rb"),
+                'json' => [
+                    // "model"=>"dall-e-3",
+                    // 'image' => fopen('../public/img_model/Charly-avatar.png', "rb"),
                     'prompt' => $prompt,
                     'n' => 1,
                     'size' => '512x512',  // Taille de l'image à générer

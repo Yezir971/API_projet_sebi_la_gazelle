@@ -51,27 +51,27 @@ class PicturesController extends AbstractController
     // public function addNewPictures(Request $request, ServiceSavePictures $savePicture, ObjectManager $manager, #[Autowire(value:'%API_KEY%')] string $apikey): JsonResponse
     public function addNewPictures(Request $request, ServiceSavePictures $savePicture, ObjectManager $manager): JsonResponse
     {
-    $data = json_decode($request->getContent(), true);
-    $prompt = $data['prompt'];
-    $apikey = $this->getParameter(name: 'API_KEY');
-    // Générer l'image on utilise la méthode generateImage en lui passant en apramètre le prompt et la clé api du .env
-    $filename = $this->imageGenerator->generateImage($prompt, $apikey);
-    
-    $url = $filename["data"][0]["url"];
-    // $savePicture->saveFile($url);
-    $savePicture->saveFile($url);
+        $data = json_decode($request->getContent(), true);
+        $prompt = $data['prompt'];
+        $apikey = $this->getParameter(name: 'API_KEY');
+        // Générer l'image on utilise la méthode generateImage en lui passant en apramètre le prompt et la clé api du .env
+        $filename = $this->imageGenerator->generateImage($prompt, $apikey);
+        
+        $url = $filename["data"][0]["url"];
+        // $savePicture->saveFile($url);
+        $savePicture->saveFile($url);
 
-    // on défini le nom de la nouvelle image 
-    $newPicture = new Pictures();
-    $newPicture->setSrc($savePicture->getPathName());
-    // on récupère les informations de l'utilisateurs qui est actuellement connecter 
-    $newPicture->setUser($this->getUser());
-    // On envoie dans la base de données les nouvelles informations de l'image enregistrer
-    $manager->persist($newPicture);
-    $manager->flush();
+        // on défini le nom de la nouvelle image 
+        $newPicture = new Pictures();
+        $newPicture->setSrc($savePicture->getPathName());
+        // on récupère les informations de l'utilisateurs qui est actuellement connecter 
+        $newPicture->setUser($this->getUser());
+        // On envoie dans la base de données les nouvelles informations de l'image enregistrer
+        $manager->persist($newPicture);
+        $manager->flush();
 
-    // return new JsonResponse(['status' => 'success', 'filename' => $data], JsonResponse::HTTP_CREATED);
-    return new JsonResponse(['status' => 'success', 'filename' => $filename], JsonResponse::HTTP_CREATED);
+        // return new JsonResponse(['status' => 'success', 'filename' => $data], JsonResponse::HTTP_CREATED);
+        return new JsonResponse(['status' => 'success', 'filename' => $filename], JsonResponse::HTTP_CREATED);
     }
 
 

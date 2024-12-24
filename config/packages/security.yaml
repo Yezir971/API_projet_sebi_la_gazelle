@@ -42,7 +42,7 @@ security:
     access_control:
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/signup, roles: PUBLIC_ACCESS }
-        - { path: ^/api/validateAccount, roles: PUBLIC_ACCESS }
+        - { path: ^/api/validate-account, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:

@@ -96,10 +96,15 @@ class UsersController extends AbstractController
             // $messagesError = "Votre token n'est plus valide.";
 
         }
-        // on génère un message d'erreur si le token a expirer
+        // on génère un message d'erreur si le token à expirer
         if( $jwt->isExpired($token) ){
-            array_push($messagesError,"Votre token a expiré." );
+            array_push($messagesError,"Votre token d'activation de compte à expiré." );
             // $messagesError = "Votre token a expiré.";
+            return $this->render('base.html.twig', [
+                "messages"=>$messagesError,
+                "redirect"=>"Veuillez vous re créer un compte.",
+                "linkRedirect"=>"retour-vers-inscription"
+            ], new Response('', Response::HTTP_BAD_REQUEST));
         }
         // on génère un message d'erreur si la signature du token a été modifier 
         if( $jwt->check($token, $this->getParameter(name: 'APP_SECRET')) ){
@@ -113,14 +118,14 @@ class UsersController extends AbstractController
 
         return $this->render('base.html.twig', [
             "messages"=>$messagesError,
-            "redirect"=>"Nous vous invitons à vous re-créer un compte, ou à contacter le service technique au 06 xx xx xx xx xx.",
+            "redirect"=>"Nous vous invitons à vous connecter compte avec le compte ". $payload["username"] .", ou à contacter le service technique si vous avez du mal à vous connecter au 06 xx xx xx xx xx.",
             "linkRedirect"=>"retour-vers-inscription"
         ], new Response('', Response::HTTP_BAD_REQUEST));
 
     }
 
     // Route qui va valider si les champs sont corrects et va envoyer un email de confirmation si les inputs sont corrects 
-    #[Route('api/validateAccount', name:'validate', methods:['GET'])]
+    #[Route('api/validate-account', name:'validate', methods:['POST'])]
     public function validateAccount( Request $request, JWTService $jwt, ValidatorInterface $validator,SerializerInterface $serializer,SendMailService $mail ):JsonResponse
     {
         // On récupére les données JSON du corps de la requête

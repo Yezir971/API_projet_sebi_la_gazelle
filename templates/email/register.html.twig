@@ -34,7 +34,7 @@
                                                 <p>Bonjour {{ user.username }},</p>
                                                 {# <p>Bonjour toto,</p> #}
                                                 {# <p>Vous avez fait un demande d'incription sur le site de jeux en ligne Sebi la gazelle avec l'email suivant : toto@test.fr</p> #}
-                                                <p>Vous avez fait un demande d'incription sur le site de jeux en ligne Sebi la gazelle avec l'email suivant : {{ user.email }}</p>
+                                                <p>Vous avez fait un demande d'inscription sur le site de jeux en ligne Sebi la gazelle avec l'email suivant : {{ user.email }}</p>
                                                 <p>Votre inscription est à valider en cliquant sur le lien ci-dessous : </p>
                                                 <p style="text-align:center; margin:40px 0;">
                                                     <a href="{{ absolute_url(path('app_user_signup', {token: token})) }}" style=" padding:10px 20px; background-color:#1B334F; color:#FFFFFF; text-decoration:none; border-radius:5px;">Le lien d'activation</a>
