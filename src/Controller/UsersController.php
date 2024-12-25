@@ -195,6 +195,37 @@ class UsersController extends AbstractController
         ], JsonResponse::HTTP_OK);
     }
 
+    // route pour vérifier si un tken est valide 
+    #[Route('/api/user/validate-token', name: 'app_user_validate_token', methods:['POST'])]
+    public function validateToken(Request $request, JWTService $jwt): JsonResponse
+    {
+        // On récupére les données JSON du corps de la requête
+        $token = json_decode($request->getContent(), true);
+        // dd($token["token"]);
+        // par défaut le message est que le token est valide 
+        $message = "Votre token est valide";
+        // le boolean de validité est également valide par défault 
+        $bollValide = true;
+        if(!$jwt->isValid($token["token"])){
+            $message = "Votre token n'est pas valide.";
+            $bollValide = false;
+
+        }
+        if($jwt->isExpired($token["token"])){
+            $message = "Votre token a expiré.";
+            $bollValide = false;
+
+        }
+        
+        return new JsonResponse([
+            'message' => $message,
+            'isValide' => $bollValide
+        ], JsonResponse::HTTP_OK);
+
+
+    }
+
+
 
     // route pour debug les mails d'authentification
     // #[Route("testmail", name:'validate_test', methods:['GET'])]
