@@ -10,6 +10,7 @@ use App\Service\JWTService;
 use App\Service\SendMailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectManager;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,12 +23,14 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 class UsersController extends AbstractController
 {
     private $userPasswordHasher;
+    private LoggerInterface $logger;
 
-    public function __construct(UserPasswordHasherInterface $userPasswordHasher)
+    public function __construct(LoggerInterface $logger, UserPasswordHasherInterface $userPasswordHasher)
     {
+        $this->logger = $logger;
         $this->userPasswordHasher = $userPasswordHasher;
     }
-    // route qui permet d'aoir tout les utilisateurs 
+    // route qui permet d'avoir tout les utilisateurs 
     #[Route('/api/users', name: 'app_all_users', methods:['GET'])]
     public function getAllUsers(UsersRepository $usersRepository, SerializerInterface $serializer): JsonResponse
     {
@@ -41,102 +44,98 @@ class UsersController extends AbstractController
     #[Route('/api/user/{id}', name: 'app_user_by_id', methods:['GET'])]
     public function getUserById(UsersRepository $usersRepository, SerializerInterface $serializer, int $id): JsonResponse
     {
-        // return $this->json([
-        //     'message' => 'Welcome to your new controller!',
-        //     'path' => 'src/Controller/UsersController.php',
-        // ]);
         $userList = $usersRepository->find($id);
         $jsonUserList = $serializer->serialize($userList, "json", ["groups" => "getUsers"]);
         return new JsonResponse($jsonUserList, Response::HTTP_OK,[], true);
     }
 
-    // route pour permettre aux utilisateurs de valider leurs inscription grace au token envoyer par mail 
+    // route pour permettre aux utilisateurs de valider leur inscription grâce au token envoyé par mail
     #[Route('/api/signup/{token}', name: 'app_user_signup')]
-    public function signUp($token, JWTService $jwt, UsersRepository $usersRepository, ObjectManager $manager): Response
+    public function signUp($token, JWTService $jwt, EntityManagerInterface $entityManager): Response
     {
+        
         $messagesError = [];
 
-        // on vérifie si le token est valide et n'a pas expiré et n'a pas été modifier 
-        if($jwt->isValid($token) && !$jwt->isExpired($token) && $jwt->check($token, $this->getParameter(name: 'APP_SECRET')) )
-        {
-            $payload = $jwt->getPayload($token);
-            // on va chercher si notre utilisateur existe deja dans la bdd si il existe $user sera défini
-            $user = $usersRepository->findOneBy(["name" => $payload['username']]);
-
-            //On vérifie que l'utilisateur est dans la bdd et n'a pas encore activé son compte 
-            if($user == null){
-                // --------------------------------- Traitement des informations et envoie vers la BDD ---------------------------------------
-                
-                // on bind a la valeur activate a true pour pas que l'utilisateurs arrive a confirmer une 2ème fois son compte 
-                // on crée un nouvelle utilisateur avec les informations contenu dans le token
-                $user = new Users();
-                $user->setActivate(true);
-                $user->setName($payload["username"]);
-                $user->setEmail($payload["email"]);
-                $user->setRoles(["ROLE USER"]);
-                $user->setPassword($payload["password"]);
-
-
-                // On envoie vers la bdd 
-                $manager->persist($user);
-                $manager->flush();
-                // --------------------------------- Traitement des informations et envoie vers la BDD ---------------------------------------
-                array_push($messagesError,"Votre compte à bien été activé !" );
-                return $this->render('base.html.twig',[
-                    "messages"=>$messagesError,
-                    "redirect"=>"vous pouvez vous connecter avec le lien suivant !",
-                    "linkRedirect" => "bonJeu"
-                ], new Response('', Response::HTTP_OK));
-            }
+        // Vérification de la validité, de l'expiration et de la signature du token
+        if (!$jwt->isValid($token)) {
+            array_push($messagesError, "Votre token n'est plus valide.");
         }
-        // on génère un message d'erreur si le token n'est plus valide 
-        if( $jwt->isValid($token) ){
-            array_push($messagesError,"Votre token n'est plus valide." );
 
-            // $messagesError = "Votre token n'est plus valide.";
-
+        if ($jwt->isExpired($token)) {
+            array_push($messagesError, "Votre token d'activation a expiré.");
         }
-        // on génère un message d'erreur si le token à expirer
-        if( $jwt->isExpired($token) ){
-            array_push($messagesError,"Votre token d'activation de compte à expiré." );
-            // $messagesError = "Votre token a expiré.";
+
+        if (!$jwt->check($token, $this->getParameter(name: 'APP_SECRET'))) {
+            array_push($messagesError, "La signature de votre token a été modifiée.");
+        }
+
+        // Si le token est invalide ou expiré, on retourne une réponse d'erreur
+        if (!empty($messagesError)) {
             return $this->render('base.html.twig', [
-                "messages"=>$messagesError,
-                "redirect"=>"Veuillez vous re créer un compte.",
-                "linkRedirect"=>"retour-vers-inscription"
+                "messages" => $messagesError,
+                "redirect" => "Veuillez vous re-créer un compte.",
+                "linkRedirect" => "retour-vers-inscription"
             ], new Response('', Response::HTTP_BAD_REQUEST));
         }
-        // on génère un message d'erreur si la signature du token a été modifier 
-        if( $jwt->check($token, $this->getParameter(name: 'APP_SECRET')) ){
-            array_push($messagesError,"La signature de votre token a été modifié." );
 
-            // $messagesError= "La signature de votre token a été modifié.";
+        // Récupérer le payload du token
+        $payload = $jwt->getPayload($token);
+        // Récupére l'ID de l'utilisateur depuis le payload et cherche l'utilisateur
+        $id = $payload["id"];
+        $user = $entityManager->getRepository(Users::class)->find($id);
+
+        // Vérifier si l'utilisateur existe déjà dans la base de données
+        if (!$user) {
+            array_push($messagesError, "Votre compte a déjà été activé.");
+            return $this->render('base.html.twig', [
+                "messages" => $messagesError,
+                "redirect" => "Vous pouvez vous connecter dès maintenant.",
+                "linkRedirect" => "login"
+            ], new Response('', Response::HTTP_NOT_FOUND));
         }
 
+        // $this->logger->info('User before activation: ', ['user' => $user]);
 
-        // ici il y a un pb avec le token 
+        // Mettre à jour le champ activate
+        $user->setActivate(true);
+        
+        // Log après la mise à jour
+        // $this->logger->info('User after activation: ', ['user' => $user]);
 
+        // Enregistrer les modifications dans la base de données
+        $entityManager->flush();
+
+        array_push($messagesError, "Votre compte a bien été activé !");
         return $this->render('base.html.twig', [
-            "messages"=>$messagesError,
-            "redirect"=>"Nous vous invitons à vous connecter compte avec le compte ". $payload["username"] .", ou à contacter le service technique si vous avez du mal à vous connecter au 06 xx xx xx xx xx.",
-            "linkRedirect"=>"retour-vers-inscription"
-        ], new Response('', Response::HTTP_BAD_REQUEST));
-
+            "messages" => $messagesError,
+            "redirect" => "Vous pouvez vous connecter avec le lien suivant !",
+            "linkRedirect" => "login"
+        ], new Response('', Response::HTTP_OK));
     }
+
+
 
     // Route qui va valider si les champs sont corrects et va envoyer un email de confirmation si les inputs sont corrects 
     #[Route('api/validate-account', name:'validate', methods:['POST'])]
-    public function validateAccount( Request $request, JWTService $jwt, ValidatorInterface $validator,SerializerInterface $serializer,SendMailService $mail ):JsonResponse
+    public function validateAccount(ObjectManager $manager, Request $request, JWTService $jwt, ValidatorInterface $validator,SerializerInterface $serializer,SendMailService $mail ):JsonResponse
     {
+        $start = microtime(true);
+
+
         // On récupére les données JSON du corps de la requête
         $data = json_decode($request->getContent(), true);
 
         // --------------------------------- Traitement des informations avant envoie du mail ---------------------------------------
         $user = new Users();
+        $user->setActivate(false);
         $user->setName($data["username"]);
         $user->setEmail($data["email"]);
         $user->setRoles(["ROLE USER"]);
         $user->setPassword($data["password"]);
+
+
+
+        // dd($user->getActivate());
 
         // Vérifier si les données sont bien envoyées en JSON et sont valides
         if (!$data) {
@@ -154,8 +153,10 @@ class UsersController extends AbstractController
         }
         // Avnat d'envoyer a la bdd on hash le password. On le hash ici car sinon validate va vérifié si notre mot de passe hashé est conforme et non si notre mot de passe est conforme.
         $user->setPassword($this->userPasswordHasher->hashPassword($user, $data["password"]));
+        // On envoie vers la bdd 
+        $manager->persist($user);
+        $manager->flush();
         // --------------------------------- Traitement des informations avant envoie du mail ---------------------------------------
-
 
 
         // --------------------------------------------------- envoie du mail ------------------------------------------------------
@@ -169,11 +170,12 @@ class UsersController extends AbstractController
         $payload = [
             'username'=> $data["username"],
             'email'=>$data["email"],
-            "password" => $user->getPassword()
+            "id" => $user->getId()
         ];
 
         // on génère le token 
         $token = $jwt->generate($header,$payload, $this->getParameter(name: 'APP_SECRET'));
+        
 
         // // on envoie un mail 
         $mail->send(
@@ -189,7 +191,9 @@ class UsersController extends AbstractController
             ]
         );
         // --------------------------------------------------- envoie du mail ------------------------------------------------------
+        $end = microtime(true);
 
+        $this->logger->info('JWT decoding time: ' . ($end - $start) . ' seconds');
         return new JsonResponse([
             'message' => 'Un mail de validation vous à été envoyé !',
         ], JsonResponse::HTTP_OK);

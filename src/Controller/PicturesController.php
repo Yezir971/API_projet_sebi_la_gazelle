@@ -37,6 +37,7 @@ class PicturesController extends AbstractController
     #[Route('/api/pictures/user/{id}', name: 'app_pictures_by_id', methods:['GET'])]
     public function getPicturesById(UsersRepository $picturesRepository, SerializerInterface $serializer, int $id): JsonResponse
     {
+        
         // on véreifie si l'utilisateur connecter passe bien son id dans la route 
         if($this->getUser()->id == $id){
             $pictureList = $picturesRepository->find($id);
@@ -51,6 +52,7 @@ class PicturesController extends AbstractController
     // public function addNewPictures(Request $request, ServiceSavePictures $savePicture, ObjectManager $manager, #[Autowire(value:'%API_KEY%')] string $apikey): JsonResponse
     public function addNewPictures(Request $request, ServiceSavePictures $savePicture, ObjectManager $manager): JsonResponse
     {
+
         $data = json_decode($request->getContent(), true);
         $prompt = $data['prompt'];
         $apikey = $this->getParameter(name: 'API_KEY');
