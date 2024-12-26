@@ -38,6 +38,7 @@ class PicturesController extends AbstractController
     public function getPicturesById(UsersRepository $picturesRepository, SerializerInterface $serializer, int $id): JsonResponse
     {
         
+
         // on véreifie si l'utilisateur connecter passe bien son id dans la route 
         if($this->getUser()->id == $id){
             $pictureList = $picturesRepository->find($id);
@@ -50,8 +51,17 @@ class PicturesController extends AbstractController
     // route qui va permettre de générer une image pour un utilisateur a l'aide d'un prompt déjà défini
     #[Route('/api/pictures/user', name: 'app_add_pictures_with_ia', methods:['GET'])]
     // public function addNewPictures(Request $request, ServiceSavePictures $savePicture, ObjectManager $manager, #[Autowire(value:'%API_KEY%')] string $apikey): JsonResponse
-    public function addNewPictures(Request $request, ServiceSavePictures $savePicture, ObjectManager $manager): JsonResponse
+    public function addNewPictures(EntityManagerInterface $entityManager, Request $request, ServiceSavePictures $savePicture, ObjectManager $manager): JsonResponse
     {
+        
+        // récupère les informations de l'utilisateur connecter
+        $userLog = $this->getUser();
+        // $userTarget = $user->find($idUser);
+        $user = $entityManager->getRepository(Users::class)->find($userLog);
+        // si l'utilisateur n'a pas activer son compte on return directement un message d'erreur 
+        if(!$user->getActivate()){
+            return new JsonResponse(['status' => 'error', 'filename' =>"votre compte n'est pas activer"], JsonResponse::HTTP_LOCKED);
+        }
 
         $data = json_decode($request->getContent(), true);
         $prompt = $data['prompt'];
