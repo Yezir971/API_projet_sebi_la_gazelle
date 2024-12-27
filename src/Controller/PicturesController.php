@@ -7,6 +7,7 @@ use App\Entity\Users;
 use App\Repository\PicturesRepository;
 use App\Repository\UsersRepository;
 use App\Service\FireflyImageGenerator;
+use App\Service\JWTService;
 use App\Service\SavePictures as ServiceSavePictures;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectManager;
@@ -30,38 +31,63 @@ class PicturesController extends AbstractController
     #[Route('/api/pictures', name: 'app_pictures', methods:['GET'])]
     public function getPictures(PicturesRepository $picturesRepository, SerializerInterface $serializer): JsonResponse
     {
-        $pictureList = $picturesRepository->findAll();
-        $jsonPictureList = $serializer->serialize($pictureList, "json", ["groups" => "getPictures"]);
-        return new JsonResponse($jsonPictureList, Response::HTTP_OK,[], true);
-    }
-    #[Route('/api/pictures/user/{id}', name: 'app_pictures_by_id', methods:['GET'])]
-    public function getPicturesById(UsersRepository $picturesRepository, SerializerInterface $serializer, int $id): JsonResponse
-    {
-        
+        // condition pour voir si le compte est activer 
 
-        // on véreifie si l'utilisateur connecter passe bien son id dans la route 
-        if($this->getUser()->id == $id){
-            $pictureList = $picturesRepository->find($id);
-            $jsonPictureList = $serializer->serialize($pictureList, "json", ["groups" => "getPicturesByidUsers"]);
-            return new JsonResponse($jsonPictureList, Response::HTTP_OK,[], true);
-        }
-        return new JsonResponse(['status' => 403, 'message' => "l'id n'est pas celui de l'utilisateur."], 403);
-    }
-
-    // route qui va permettre de générer une image pour un utilisateur a l'aide d'un prompt déjà défini
-    #[Route('/api/pictures/user', name: 'app_add_pictures_with_ia', methods:['GET'])]
-    // public function addNewPictures(Request $request, ServiceSavePictures $savePicture, ObjectManager $manager, #[Autowire(value:'%API_KEY%')] string $apikey): JsonResponse
-    public function addNewPictures(EntityManagerInterface $entityManager, Request $request, ServiceSavePictures $savePicture, ObjectManager $manager): JsonResponse
-    {
-        
         // récupère les informations de l'utilisateur connecter
-        $userLog = $this->getUser();
-        // $userTarget = $user->find($idUser);
-        $user = $entityManager->getRepository(Users::class)->find($userLog);
+        $user = $this->getUser();
         // si l'utilisateur n'a pas activer son compte on return directement un message d'erreur 
         if(!$user->getActivate()){
             return new JsonResponse(['status' => 'error', 'filename' =>"votre compte n'est pas activer"], JsonResponse::HTTP_LOCKED);
         }
+
+        // condition pour voir si le compte est activer 
+        $pictureList = $picturesRepository->findAll();
+        $jsonPictureList = $serializer->serialize($pictureList, "json", ["groups" => "getPictures"]);
+        return new JsonResponse($jsonPictureList, Response::HTTP_OK,[], true);
+    }
+    #[Route('/api/pictures/user', name: 'app_pictures_by_id', methods:['GET'])]
+    public function getPicturesById(UsersRepository $picturesRepository, SerializerInterface $serializer): JsonResponse
+    {
+        // récupère les informations de l'utilisateur connecter
+        $user = $this->getUser();
+
+        // condition pour voir si le compte est activer 
+
+        // si l'utilisateur n'a pas activer son compte on return directement un message d'erreur 
+        if(!$user->getActivate()){
+            return new JsonResponse(['status' => 'error', 'filename' =>"votre compte n'est pas activer"], JsonResponse::HTTP_LOCKED);
+        }
+
+        // condition pour voir si le compte est activer 
+
+
+        // on récupère l'id de l'utilisateur 
+        $userId = $user->getId();
+        $pictureList = $picturesRepository->find($userId);
+        // si il n'y a pas de picture on retourne un message avec un code 404
+        if (!$pictureList) {
+            return new JsonResponse(['message' => "Vous n\'avez aucune image"], Response::HTTP_NOT_FOUND);
+        }
+        // sinon on retourne les images avec un code 200
+        $jsonPictureList = $serializer->serialize($pictureList, "json", ["groups" => "getPicturesByidUsers"]);
+        return new JsonResponse($jsonPictureList, Response::HTTP_OK,[], true);
+    }
+
+    // route qui va permettre de générer une image pour un utilisateur a l'aide d'un prompt déjà défini
+    #[Route('/api/make-picture/user', name: 'app_add_pictures_with_ia', methods:['POST'])]
+    // public function addNewPictures(Request $request, ServiceSavePictures $savePicture, ObjectManager $manager, #[Autowire(value:'%API_KEY%')] string $apikey): JsonResponse
+    public function addNewPictures( Request $request, ServiceSavePictures $savePicture, ObjectManager $manager): JsonResponse
+    {
+        // condition pour voir si le compte est activer 
+
+        // récupère les informations de l'utilisateur connecter
+        $user = $this->getUser();
+        // si l'utilisateur n'a pas activer son compte on return directement un message d'erreur 
+        if(!$user->getActivate()){
+            return new JsonResponse(['status' => 423, 'filename' =>"Votre compte n'est pas activer."], JsonResponse::HTTP_LOCKED);
+        }
+
+        // condition pour voir si le compte est activer 
 
         $data = json_decode($request->getContent(), true);
         $prompt = $data['prompt'];
@@ -88,13 +114,21 @@ class PicturesController extends AbstractController
 
 
     // Route qui permet d'assigner un avatar à un utilisateur uniquement grâce à l'id d'une de ses pictures 
-    #[Route('api/picture/setavatar/{avatarId}', name:'set_avatar', methods:['POST'])]
+    #[Route('api/picture/setavatar/{avatarId}', name:'set_avatar', methods:['PUT'])]
     public function setAvatar(EntityManagerInterface $entityManager, int $avatarId): JsonResponse
     {
+        // condition pour voir si le compte est activer 
+        // récupère les informations de l'utilisateur connecter
+        $userActivate = $this->getUser();
+        // si l'utilisateur n'a pas activer son compte on return directement un message d'erreur 
+        if(!$userActivate->getActivate()){
+            return new JsonResponse(['status' => 'error', 'filename' =>"votre compte n'est pas activer"], JsonResponse::HTTP_LOCKED);
+        }
+        // condition pour voir si le compte est activer 
+
 
         // récupère les informations de l'utilisateur connecter
         $idUser = $this->getUser();
-        // $userTarget = $user->find($idUser);
         
 
         $user = $entityManager->getRepository(Users::class)->find($idUser);

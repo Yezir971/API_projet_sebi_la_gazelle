@@ -34,17 +34,37 @@ class UsersController extends AbstractController
     #[Route('/api/users', name: 'app_all_users', methods:['GET'])]
     public function getAllUsers(UsersRepository $usersRepository, SerializerInterface $serializer): JsonResponse
     {
+        // condition pour voir si le compte est activer 
+        // récupère les informations de l'utilisateur connecter
+        $user = $this->getUser();
+        // si l'utilisateur n'a pas activer son compte on return directement un message d'erreur 
+        if(!$user->getActivate()){
+            return new JsonResponse(['status' => 'error', 'filename' =>"votre compte n'est pas activer"], JsonResponse::HTTP_LOCKED);
+        }
+        // condition pour voir si le compte est activer 
+
         $userList = $usersRepository->findAll();
         $jsonUserList = $serializer->serialize($userList, "json", ["groups" => "getUsers"]);
         return new JsonResponse($jsonUserList, Response::HTTP_OK,[], true);
     }
 
 
-    // route pour avoir un utilisateur juste avec son id 
-    #[Route('/api/user/{id}', name: 'app_user_by_id', methods:['GET'])]
-    public function getUserById(UsersRepository $usersRepository, SerializerInterface $serializer, int $id): JsonResponse
+    // route pour avoir les info d'un utilisateur juste avec son token de connection
+    #[Route('/api/user', name: 'app_user_by_id', methods:['GET'])]
+    public function getUserById(UsersRepository $usersRepository, SerializerInterface $serializer): JsonResponse
     {
-        $userList = $usersRepository->find($id);
+        // condition pour voir si le compte est activer 
+        // récupère les informations de l'utilisateur connecter
+        $user = $this->getUser();
+        // si l'utilisateur n'a pas activer son compte on return directement un message d'erreur 
+        if(!$user->getActivate()){
+            return new JsonResponse(['status' => 'error', 'filename' =>"votre compte n'est pas activer"], JsonResponse::HTTP_LOCKED);
+        }
+        // condition pour voir si le compte est activer 
+
+        // On récupère son id 
+        $userId = $user->getId();
+        $userList = $usersRepository->find($userId);
         $jsonUserList = $serializer->serialize($userList, "json", ["groups" => "getUsers"]);
         return new JsonResponse($jsonUserList, Response::HTTP_OK,[], true);
     }

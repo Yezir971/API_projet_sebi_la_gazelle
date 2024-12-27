@@ -21,20 +21,39 @@ class ScoresController extends AbstractController
     #[Route('/api/scores', name: 'app_scores', methods:['GET'])]
     public function getAllSores(ScoresRepository $scoresRepository, SerializerInterface $serializer): JsonResponse
     {
+        // condition pour voir si le compte est activer 
+        // récupère les informations de l'utilisateur connecter
+        $userActivate = $this->getUser();
+        // si l'utilisateur n'a pas activer son compte on return directement un message d'erreur 
+        if(!$userActivate->getActivate()){
+            return new JsonResponse(['status' => 'error', 'filename' =>"votre compte n'est pas activer"], JsonResponse::HTTP_LOCKED);
+        }
+        // condition pour voir si le compte est activer 
         $scoreList = $scoresRepository->findAll();
         $jsonPictureList = $serializer->serialize($scoreList, "json", ["groups" => "getScore"]);
         return new JsonResponse($jsonPictureList, Response::HTTP_OK,[], true);
     }
     // route qui va permettre de voir le socre d'un utilisateur grâce a son id 
-    #[Route('/api/scores/user/{id}', name: 'app_scores_by_id', methods:['GET'])]
-    public function getScoresByIdUser(UsersRepository $scoresRepository, SerializerInterface $serializer, int $id): JsonResponse
+    #[Route('/api/scores/user', name: 'app_scores_by_id', methods:['GET'])]
+    public function getScoresByIdUser(UsersRepository $scoresRepository, SerializerInterface $serializer): JsonResponse
     {
-        if($this->getUser()->id == $id){
-            $scoreList = $scoresRepository->find($id);
-            $jsonPictureList = $serializer->serialize($scoreList, "json", ["groups" => "getScoreById"]);
-            return new JsonResponse($jsonPictureList, Response::HTTP_OK,[], true);
+        // condition pour voir si le compte est activer 
+
+        // récupère les informations de l'utilisateur connecter
+        $user = $this->getUser();
+        // si l'utilisateur n'a pas activer son compte on return directement un message d'erreur 
+        if(!$user->getActivate()){
+            return new JsonResponse(['status' => 'error', 'filename' =>"votre compte n'est pas activer"], JsonResponse::HTTP_LOCKED);
         }
-        return new JsonResponse(['status' => 403, 'message' => "l'id n'est pas celui de l'utilisateur."], 403);
+        // condition pour voir si le compte est activer 
+
+        // Récupère les informations de l'utilisateur connecter 
+        // récupère son id 
+        $userId = $user->getId();
+
+        $scoreList = $scoresRepository->find($userId);
+        $jsonPictureList = $serializer->serialize($scoreList, "json", ["groups" => "getScoreById"]);
+        return new JsonResponse($jsonPictureList, Response::HTTP_OK,[], true);
     }
 
 
@@ -45,8 +64,16 @@ class ScoresController extends AbstractController
 
         // On récupére les données JSON du corps de la requête
         $data = json_decode($request->getContent(), true);
-        // On récupère l'utilisateur qui est actuelement connnecter 
+
+        // condition pour voir si le compte est activer 
+
+        // récupère les informations de l'utilisateur connecter
         $user = $this->getUser();
+        // si l'utilisateur n'a pas activer son compte on return directement un message d'erreur 
+        if(!$user->getActivate()){
+            return new JsonResponse(['status' => 'error', 'filename' =>"votre compte n'est pas activer"], JsonResponse::HTTP_LOCKED);
+        }
+        // condition pour voir si le compte est activer 
 
         // Vérifier si les données sont bien envoyées en JSON et sont valides
         if (!$data) {
@@ -88,6 +115,15 @@ class ScoresController extends AbstractController
     #[Route("api/bestscore", name:"get_best_score", methods: ['POST'])]
     public function getBestScore(Request $request, ScoresRepository $score, SerializerInterface $serializer): JsonResponse
     {
+        // condition pour voir si le compte est activer 
+        // récupère les informations de l'utilisateur connecter
+        $user = $this->getUser();
+        // si l'utilisateur n'a pas activer son compte on return directement un message d'erreur 
+        if(!$user->getActivate()){
+            return new JsonResponse(['status' => 'error', 'filename' =>"votre compte n'est pas activer"], JsonResponse::HTTP_LOCKED);
+        }
+        // condition pour voir si le compte est activer 
+
         // on récupère le contenu de la requete du body 
         $data = json_decode($request->getContent(), true);
         

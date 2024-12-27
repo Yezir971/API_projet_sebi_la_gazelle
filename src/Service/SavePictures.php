@@ -9,7 +9,7 @@ class SavePictures{
     public function saveFile(string $url){
         // 2. Télécharger l'image à partir de l'URL fournie par openapi
         $fileUrl = file_get_contents($url);
-        $fileName = uniqid() . '.png';
+        $fileName = uniqid() . '.webp';
         // On sauvegarde le fileName 
         $this->fileName = $fileName;
 

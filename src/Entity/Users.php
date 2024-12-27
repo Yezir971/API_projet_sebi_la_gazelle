@@ -45,14 +45,14 @@ class Users implements UserInterface,PasswordAuthenticatedUserInterface
 
     #[ORM\Column(name: 'name', length: 255, unique:true)]
     #[Groups(["getUsers", "getScore","getScoreById","getPictures","getPicturesByidUsers", "getBestScore"])]
-    #[Assert\Length(min: 1, max: 255, minMessage: "Le nom de l'utilisateur dois faire au moins {{ limit }} caractères.", maxMessage: "Le nom de l'utilisateur ne peut pas faire plus de {{ limit }} caractères.")]
+    #[Assert\Length(min: 1, max: 255, minMessage: "Le nom de l'utilisateur doit faire au moins {{ limit }} caractère.", maxMessage: "Le nom de l'utilisateur ne peut pas faire plus de {{ limit }} caractères.")]
     #[Assert\NotBlank(message: "Le nom de l'utilisateur est obligatoire.")]
     #[Assert\Type(type: "string", message: "Le nom l'utilisateur doit être de type string.")]
     private ?string $name = null;
 
     #[ORM\Column(name: 'email',length: 255,type:'string',  unique:true)]
     #[Groups(["getUsers"])]
-    #[Assert\Length(min: 1, max: 255, minMessage: "Le mail de l'utilisateur dois faire au moins {{ limit }} caractères.", maxMessage: "Le mail de l'utilisateur ne peut pas faire plus de {{ limit }} caractères.")]
+    #[Assert\Length(min: 1, max: 255, minMessage: "Le mail de l'utilisateur doit faire au moins {{ limit }} caractère.", maxMessage: "Le mail de l'utilisateur ne peut pas faire plus de {{ limit }} caractères.")]
     #[Assert\NotBlank(message: "Le mail de l'utilisateur est obligatoire.")]
     #[Assert\Email(message: "Le mail de l'utilisateur n'est pas valide.")]
     private ?string $email = null;
