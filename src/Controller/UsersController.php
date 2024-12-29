@@ -105,24 +105,20 @@ class UsersController extends AbstractController
         $id = $payload["id"];
         $user = $entityManager->getRepository(Users::class)->find($id);
 
-        // Vérifier si l'utilisateur existe déjà dans la base de données
+        // Vérifie si l'utilisateur n'est pas dans la base de données
         if (!$user) {
-            array_push($messagesError, "Votre compte a déjà été activé.");
+            array_push($messagesError, "Votre compte n'a pas été activé.");
             return $this->render('base.html.twig', [
                 "messages" => $messagesError,
-                "redirect" => "Vous pouvez vous connecter dès maintenant.",
+                "redirect" => "Votre compte ne figure pas dans notre base de données.",
                 "linkRedirect" => "login"
             ], new Response('', Response::HTTP_NOT_FOUND));
         }
 
-        // $this->logger->info('User before activation: ', ['user' => $user]);
 
         // Mettre à jour le champ activate
         $user->setActivate(true);
         
-        // Log après la mise à jour
-        // $this->logger->info('User after activation: ', ['user' => $user]);
-
         // Enregistrer les modifications dans la base de données
         $entityManager->flush();
 
@@ -253,6 +249,8 @@ class UsersController extends AbstractController
 
 
 
+
+
     // route pour envoyer le token par mail pour reset le mot de passe 
     #[Route('/change-password', name:'change_password', methods:['POST'])]
     public function changePwdByMail(SendMailService $mail,EntityManagerInterface $entityManager, JWTService $jwt ,Request $request, UsersRepository $userInfo) : Response
@@ -315,8 +313,8 @@ class UsersController extends AbstractController
 
 
     // route pour changer le password d'un utilisateur 
-    #[Route('/api/change-password/{token}', name:'change_password_api', methods:['POST', 'PUT'])]
-    public function changePwd(string $token,Request $request, JWTService $jwt,UsersRepository $userInfo, EntityManagerInterface $entityManager ): JsonResponse 
+    #[Route('/api/change-password/{token}', name:'change_password_api', methods:['POST'])]
+    public function changePwd(string $token,Request $request, JWTService $jwt,UsersRepository $userInfo, EntityManagerInterface $entityManager,ValidatorInterface $validator,SerializerInterface $serializer ): JsonResponse 
     {
         // On récupére les données JSON du corps de la requête
         $email = json_decode($request->getContent(), true);
@@ -324,17 +322,25 @@ class UsersController extends AbstractController
         // on récupère les infos dans le payload du token 
         $payload = $jwt->getPayload($token);
         
+        
         // récupération de l'id de l'utilisateur grâce a la méthode dans le repository
         $userId = $userInfo->findIdByMailUser($payload['email']['email']);
         $user = $entityManager->getRepository(Users::class)->find($userId[0]['id']);
-        if($email["password1"] !== $email["password2"]){
-            return $this->render('change-password.html.twig', ["token" => $token, "message" => "Les deux mots de passe sont différents."]);
-
+        // si on ne trouve pas l'utilisateur on retorne une errrur 404
+        if(!$user){
+            return new JsonResponse([], JsonResponse::HTTP_NOT_FOUND, [], true);
         }
 
 
+        // On vérifie également si tout nos champs sont bien remplie grâce à Validator et aux Asserts que l'on a mis dans l'entity Users
+        $errors = $validator->validate($user);
+        // Si il y a 1 ou + d'erreur on retourne une jsonResponse qui va contenir l'ensembles des erreurs 
+        if ($errors->count() > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
+        }
 
-        $user->setPassword($email["password1"]);
+        // on hash le mot de passe avant de l'envoyer a la bdd
+        $user->setPassword($this->userPasswordHasher->hashPassword($user, $email["password1"]));
 
         // Enregistrer les modifications dans la base de données
         $entityManager->flush();
@@ -343,35 +349,4 @@ class UsersController extends AbstractController
             'message' =>$email,
         ], JsonResponse::HTTP_OK);
     }
-
-
-    // route pour debug les mails d'authentification
-    // #[Route("testmail", name:'validate_test', methods:['GET'])]
-    // public function testMail(){
-    //     return $this->render('base.html.twig');
-    // }
-
-    // route qui va permettre d'invalider le token d'un utilisateur, notre token est stateless, il n'a pas d'état.
-    // c'est pourquoi un champ lastLogout va nous permettre d'invalider notre token, en comparant la date de création du token d'un user avec la date sa dernière déco  
-    // #[Route('api/logout', name:'delete_session', methods:['DELETE'])]
-    // // public function logout(Users $user, ObjectManager $entityManager)
-    // public function logout(UsersRepository $user, ObjectManager $manager):Response
-    // // le but garder une trace de la déco de l'utilisateur en bdd pour détruire le 
-    // {
-    //     // récupère les informations de l'utilisateur connecter
-    //     $idUser = $this->getUser();
-
-    //     $userTarget = $user->find($idUser);
-    //     // set la date de déco
-    //     $userTarget->lastlogout = new \DateTime();
-    //     // dd($userTarget);
-    //     $manager->persist($userTarget);
-    //     $manager->flush();
-
-    //     return new JsonResponse([
-    //         'message' => 'Vous avez bien été déco',
-    //     ], JsonResponse::HTTP_OK);
-
-    // }
-
 }
