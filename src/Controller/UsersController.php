@@ -8,6 +8,7 @@ use App\Repository\UsersRepository;
 use App\Service\JWTService;
 // use App\Service\JWTService;
 use App\Service\SendMailService;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectManager;
 use Psr\Log\LoggerInterface;
@@ -249,6 +250,99 @@ class UsersController extends AbstractController
 
     }
 
+
+
+
+    // route pour envoyer le token par mail pour reset le mot de passe 
+    #[Route('/change-password', name:'change_password', methods:['POST'])]
+    public function changePwdByMail(SendMailService $mail,EntityManagerInterface $entityManager, JWTService $jwt ,Request $request, UsersRepository $userInfo) : Response
+    {
+        // On récupére les données JSON du corps de la requête
+        $email = json_decode($request->getContent(), true);
+
+        // récupération de l'id de l'utilisateur grâce a la méthode dans le repository
+        $userId = $userInfo->findIdByMailUser($email['email']);
+        if(!$userId){
+            return new JsonResponse([
+                'message' =>"L'adresse e-mail n'existe pas." ,
+            ], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        // on récupère les informations de l'utilisateur sous forme de classe
+        $data = $entityManager->getRepository(Users::class)->find($userId[0]['id']);
+
+        // on encode le token 
+        $header = [
+            'typ' => 'JWT',
+            'alg' => 'HS256'
+        ];
+        // on fait le payload 
+        $payload = [
+            'email'=>$email,
+            "id" => $userId[0]['id']
+        ];
+        // on génère le token 
+        $token = $jwt->generate($header,$payload, $this->getParameter(name: 'APP_SECRET'));
+
+        // on envoie le token par email
+        $mail->send(
+            'ahmedalyjames@gmail.com',
+            // 'sebmlrd06@gmail.com',
+            'james_ahmedaly@yahoo.com',
+            // $data["email"],
+            'Modification de votre mot de passe sur le site sebi la gazelle',
+            'password',
+            [
+                'user'=> $data,
+                'token'=>$token
+            ]
+        );
+        return new JsonResponse([
+            'message' =>"Un e-mail vous a été envoyé." ,
+        ], JsonResponse::HTTP_OK);
+    }
+
+    // visuel du formulaire pour changer de mot de passe 
+    #[Route('/change-password/{token}', name:'view_change_password')]
+    public function viewChangePwd(string $token) : Response
+    {
+        return $this->render('change-password.html.twig', ["token" => $token, "message" =>""]);
+    }
+
+
+
+
+
+
+    // route pour changer le password d'un utilisateur 
+    #[Route('/api/change-password/{token}', name:'change_password_api', methods:['POST', 'PUT'])]
+    public function changePwd(string $token,Request $request, JWTService $jwt,UsersRepository $userInfo, EntityManagerInterface $entityManager ): JsonResponse 
+    {
+        // On récupére les données JSON du corps de la requête
+        $email = json_decode($request->getContent(), true);
+
+        // on récupère les infos dans le payload du token 
+        $payload = $jwt->getPayload($token);
+        
+        // récupération de l'id de l'utilisateur grâce a la méthode dans le repository
+        $userId = $userInfo->findIdByMailUser($payload['email']['email']);
+        $user = $entityManager->getRepository(Users::class)->find($userId[0]['id']);
+        if($email["password1"] !== $email["password2"]){
+            return $this->render('change-password.html.twig', ["token" => $token, "message" => "Les deux mots de passe sont différents."]);
+
+        }
+
+
+
+        $user->setPassword($email["password1"]);
+
+        // Enregistrer les modifications dans la base de données
+        $entityManager->flush();
+
+        return new JsonResponse([
+            'message' =>$email,
+        ], JsonResponse::HTTP_OK);
+    }
 
 
     // route pour debug les mails d'authentification

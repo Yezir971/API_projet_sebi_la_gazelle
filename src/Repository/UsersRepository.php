@@ -31,13 +31,15 @@ class UsersRepository extends ServiceEntityRepository
     //        ;
     //    }
 
-    //    public function findOneBySomeField($value): ?Users
-    //    {
-    //        return $this->createQueryBuilder('u')
-    //            ->andWhere('u.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    public function findIdByMailUser(string $emailUser): array
+    {
+        return $this->createQueryBuilder('s')
+            ->select('s.id')
+            ->where('s.email = :emailUser')
+            ->setParameter('emailUser', $emailUser)
+            ->getQuery()
+            ->getResult();
+    }
+
+
 }

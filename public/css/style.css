@@ -35,6 +35,13 @@ body{
     line-height:150%;
 }
 
+#formulaireMotDePasse{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+
 /* .primaryTable{
     border-collapse: separate;
     color: #1B334F;
