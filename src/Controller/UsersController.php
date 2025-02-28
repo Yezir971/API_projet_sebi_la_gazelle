@@ -216,7 +216,7 @@ class UsersController extends AbstractController
         ], JsonResponse::HTTP_OK);
     }
 
-    // route pour vérifier si un tken est valide 
+    // route pour vérifier si un token est valide 
     #[Route('/api/user/validate-token', name: 'app_user_validate_token', methods:['POST'])]
     public function validateToken(Request $request, JWTService $jwt): JsonResponse
     {

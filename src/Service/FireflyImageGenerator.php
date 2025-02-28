@@ -7,7 +7,6 @@ class FireflyImageGenerator
 {
     private $httpClient;
 
-    // public function __construct(HttpClientInterface $httpClient)
     public function __construct(HttpClientInterface $httpClient)
     {
         $this->httpClient = $httpClient;
@@ -18,7 +17,7 @@ class FireflyImageGenerator
     {
 
         try {
-            // 1. Appeler l'API openai avec le prompt
+            // Appeler l'API openai avec le prompt
             $response = $this->httpClient->request('POST', 'https://api.openai.com/v1/images/generations', [
             // $response = $this->httpClient->request('POST', 'https://api.openai.com/v1/images/edits', [
                 'headers' => [
