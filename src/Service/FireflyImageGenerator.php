@@ -17,7 +17,7 @@ class FireflyImageGenerator
     {
 
         try {
-            // Appeler l'API openai avec le prompt
+            // Appele de l'API openai avec le prompt
             $response = $this->httpClient->request('POST', 'https://api.openai.com/v1/images/generations', [
             // $response = $this->httpClient->request('POST', 'https://api.openai.com/v1/images/edits', [
                 'headers' => [
@@ -25,16 +25,16 @@ class FireflyImageGenerator
                     'Content-Type' => 'application/json',
                 ],
                 'json' => [
-                    // "model"=>"dall-e-3",
-                    // 'image' => fopen('../public/img_model/Charly-avatar.png', "rb"),
+                    'model'=>'dall-e-3',
+                    // on récupère une des images de fond pour la génération des images dans le dossier img_model
+                    // 'image' => fopen('../public/img_model/background_model_1.png', "rb"),
                     'prompt' => $prompt,
                     'n' => 1,
-                    'size' => '512x512',  // Taille de l'image à générer
+                    'size' => '1024x1024',  // Taille de l'image à générer
                 ],
             ]);
 
             $data = $response->toArray();
-            // $imageUrl = $data['url']; // Remplacer par la clé exacte si différente
 
 
 
