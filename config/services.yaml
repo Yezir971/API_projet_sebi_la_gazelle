@@ -9,6 +9,9 @@ parameters:
     APP_SECRET: '%env(APP_SECRET)%'
 
 services:
+    App\MessageHandler\:
+        resource: '../src/MessageHandler'
+        tags: ['messenger.message_handler']
     App\Service\FireflyImageGenerator:
         arguments:
             $apiKey: '%env(API_KEY)%'
