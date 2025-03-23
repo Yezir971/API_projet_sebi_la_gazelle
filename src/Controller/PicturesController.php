@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Pictures;
 use App\Entity\Users;
+use App\Message\GenerateImageMessage;
 use App\Repository\PicturesRepository;
 use App\Repository\UsersRepository;
 use App\Service\FireflyImageGenerator;
@@ -16,6 +17,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 
@@ -74,42 +76,27 @@ class PicturesController extends AbstractController
     }
 
     // route qui va permettre de générer une image pour un utilisateur a l'aide d'un prompt déjà défini
-    #[Route('/api/make-picture/user', name: 'app_add_pictures_with_ia', methods:['POST'])]
     // public function addNewPictures(Request $request, ServiceSavePictures $savePicture, ObjectManager $manager, #[Autowire(value:'%API_KEY%')] string $apikey): JsonResponse
-    public function addNewPictures( Request $request, ServiceSavePictures $savePicture, ObjectManager $manager): JsonResponse
+    #[Route('/api/make-picture/user', name: 'app_add_pictures_with_ia', methods: ['POST'])]
+    public function addNewPictures(Request $request, MessageBusInterface $bus): JsonResponse
     {
-        // condition pour voir si le compte est activer 
-
-        // récupère les informations de l'utilisateur connecter
         $user = $this->getUser();
-        // si l'utilisateur n'a pas activer son compte on return directement un message d'erreur 
-        if(!$user->getActivate()){
-            return new JsonResponse(['status' => 423, 'filename' =>"Votre compte n'est pas activer."], JsonResponse::HTTP_LOCKED);
+        if (!$user->getActivate()) {
+            return new JsonResponse(['status' => 423, 'message' => "Votre compte n'est pas activé."], JsonResponse::HTTP_LOCKED);
         }
 
-        // condition pour voir si le compte est activer 
-
         $data = json_decode($request->getContent(), true);
+        if (!isset($data['prompt'])) {
+            return new JsonResponse(['status' => 400, 'message' => 'Prompt manquant'], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
         $prompt = $data['prompt'];
-        $apikey = $this->getParameter(name: 'API_KEY');
-        // Générer l'image on utilise la méthode generateImage en lui passant en apramètre le prompt et la clé api du .env
-        $filename = $this->imageGenerator->generateImage($prompt, $apikey);
-        
-        $url = $filename["data"][0]["url"];
-        // $savePicture->saveFile($url);
-        $savePicture->saveFile($url);
+        $apikey = $this->getParameter('API_KEY');
 
-        // on défini le nom de la nouvelle image 
-        $newPicture = new Pictures();
-        $newPicture->setSrc($savePicture->getPathName());
-        // on récupère les informations de l'utilisateurs qui est actuellement connecter 
-        $newPicture->setUser($this->getUser());
-        // On envoie dans la base de données les nouvelles informations de l'image enregistrer
-        $manager->persist($newPicture);
-        $manager->flush();
+        // ✅ Envoi de la requête en tâche de fond avec Messenger
+        $bus->dispatch(new GenerateImageMessage($prompt, $apikey, $user->getId()));
 
-        // return new JsonResponse(['status' => 'success', 'filename' => $data], JsonResponse::HTTP_CREATED);
-        return new JsonResponse(['status' => 'success', 'filename' => $filename], JsonResponse::HTTP_CREATED);
+        return new JsonResponse(['status' => 'success', 'message' => 'L’image est en cours de génération'], JsonResponse::HTTP_ACCEPTED);
     }
 
 
