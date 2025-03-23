@@ -1,5 +1,12 @@
 doctrine:
     dbal:
+        # connections:
+        #     default:
+        #         options:
+        #             1002: "SET SESSION wait_timeout=600"  # 10 minutes
+        #             1003: "SET SESSION interactive_timeout=600"
+        #         mapping_types:
+        #             enum: string
         url: '%env(resolve:DATABASE_URL)%'
 
         # IMPORTANT: You MUST configure your server version,
